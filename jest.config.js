@@ -3,6 +3,7 @@ export default {
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
   extensionsToTreatAsEsm: ['.ts'],
+  setupFiles: ['<rootDir>/testing/setup.ts'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
@@ -13,6 +14,7 @@ export default {
     '**/*.ts',
     '!**/*.spec.ts',
     '!main.ts',
+    '!testing/**',
     '!database/migrations/**',
     '!database/seeds/**',
     '!database/cli/**',

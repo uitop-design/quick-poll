@@ -13,6 +13,7 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "isolatedModules": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "rootDir": "./src",
