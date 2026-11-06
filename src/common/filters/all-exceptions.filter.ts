@@ -2,6 +2,7 @@ import {
   type ArgumentsHost,
   Catch,
   type ExceptionFilter,
+  HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
@@ -48,7 +49,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private buildBody(exception: unknown, path: string): ErrorResponse {
     const body = createErrorResponse(exception, path);
-    if (body.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (
+      body.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR &&
+      !(exception instanceof HttpException)
+    ) {
       this.logger.error(
         exception instanceof Error ? (exception.stack ?? exception.message) : String(exception),
       );
