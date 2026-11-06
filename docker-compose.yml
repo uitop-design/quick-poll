@@ -1,0 +1,68 @@
+name: quick-poll
+
+x-app: &app
+  build: .
+  image: quick-poll:local
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: quick_poll
+      POSTGRES_PASSWORD: quick_poll
+      POSTGRES_DB: quick_poll
+    ports:
+      - '5435:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U quick_poll -d quick_poll']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - '6381:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ['sh', '-c', 'node dist/database/cli/migrate.js && node dist/database/cli/seed.js']
+    environment:
+      DATABASE_URL: postgres://quick_poll:quick_poll@postgres:5432/quick_poll
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  app:
+    <<: *app
+    environment:
+      PORT: 3200
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      DATABASE_URL: postgres://quick_poll:quick_poll@postgres:5432/quick_poll
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '3200:3200'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3200/api/health || exit 1']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
