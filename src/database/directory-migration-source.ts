@@ -10,7 +10,7 @@ export class DirectoryMigrationSource implements Knex.MigrationSource<string> {
 
   async getMigrations(): Promise<string[]> {
     const files = await this.listMigrationFiles();
-    return [...new Set(files.map((file) => parse(file).name))].sort();
+    return [...new Set(files.map((file) => parse(file).name))].toSorted();
   }
 
   getMigrationName(migration: string): string {

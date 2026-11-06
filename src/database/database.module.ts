@@ -21,9 +21,9 @@ import { createKnexConfig } from './knex.config.js';
   exports: [KNEX],
 })
 export class DatabaseModule implements OnApplicationShutdown {
-  constructor(@Inject(KNEX) private readonly knex: Knex) {}
+  constructor(@Inject(KNEX) private readonly connection: Knex) {}
 
   async onApplicationShutdown(): Promise<void> {
-    await this.knex.destroy();
+    await this.connection.destroy();
   }
 }
