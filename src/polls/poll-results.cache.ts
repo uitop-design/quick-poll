@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { AppConfigService } from '../config/app-config.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import type { PollResults } from './dto/poll-results.dto.js';
@@ -15,8 +15,10 @@ redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[3])
 return 1
 `;
 
+const KEY_PATTERN = 'poll:*:results';
+
 @Injectable()
-export class PollResultsCache {
+export class PollResultsCache implements OnModuleInit {
   private readonly logger = new Logger(PollResultsCache.name);
   private readonly defaultTtlMs: number;
 
@@ -29,6 +31,24 @@ export class PollResultsCache {
 
   static key(pollId: string): string {
     return `poll:${pollId}:results`;
+  }
+
+  onModuleInit(): void {
+    this.redis.onRecovery(() => this.clear());
+  }
+
+  async clear(): Promise<void> {
+    try {
+      const stream = this.redis.client.scanStream({ match: KEY_PATTERN, count: 500 });
+      for await (const keys of stream as AsyncIterable<string[]>) {
+        if (keys.length > 0) {
+          await this.redis.client.unlink(...keys);
+        }
+      }
+      this.logger.log('Results cache cleared');
+    } catch (error) {
+      this.logFailure('clear', error);
+    }
   }
 
   async get(pollId: string): Promise<PollResults | null> {

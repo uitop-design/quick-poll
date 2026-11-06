@@ -4,10 +4,13 @@ import { AppConfigService } from '../config/app-config.service.js';
 
 type ConnectionState = 'unknown' | 'up' | 'down';
 
+type RecoveryListener = () => Promise<void>;
+
 @Injectable()
 export class RedisService implements OnApplicationShutdown {
   readonly client: Redis;
   private readonly logger = new Logger(RedisService.name);
+  private readonly recoveryListeners: RecoveryListener[] = [];
   private state: ConnectionState = 'unknown';
 
   constructor(config: AppConfigService) {
@@ -30,6 +33,10 @@ export class RedisService implements OnApplicationShutdown {
     }
   }
 
+  onRecovery(listener: RecoveryListener): void {
+    this.recoveryListeners.push(listener);
+  }
+
   async onApplicationShutdown(): Promise<void> {
     try {
       await this.client.quit();
@@ -39,14 +46,28 @@ export class RedisService implements OnApplicationShutdown {
   }
 
   private updateState(next: Exclude<ConnectionState, 'unknown'>, reason?: string): void {
-    if (this.state === next) {
+    const previous = this.state;
+    if (previous === next) {
       return;
     }
     this.state = next;
-    if (next === 'up') {
-      this.logger.log('Redis connection is ready');
-    } else {
+    if (next === 'down') {
       this.logger.warn(`Redis is unavailable (${reason}), falling back to PostgreSQL only`);
+      return;
+    }
+    this.logger.log('Redis connection is ready');
+    if (previous === 'down') {
+      this.notifyRecovery();
+    }
+  }
+
+  private notifyRecovery(): void {
+    for (const listener of this.recoveryListeners) {
+      listener().catch((error: unknown) =>
+        this.logger.warn(
+          `Redis recovery handler failed: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
     }
   }
 }
