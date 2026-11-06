@@ -33,7 +33,12 @@ export class VotesController {
   @ApiTooManyRequestsResponse({
     type: ErrorResponseDto,
     description: 'More than the allowed number of votes per minute from one IP',
-    headers: { 'Retry-After': { description: 'Seconds until voting is allowed again' } },
+    headers: {
+      'Retry-After': {
+        description: 'Seconds until voting is allowed again',
+        schema: { type: 'integer' },
+      },
+    },
   })
   vote(
     @Param() { id }: PollIdParamDto,
