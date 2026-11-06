@@ -17,13 +17,6 @@ interface ResolvedError {
   message: string | string[];
 }
 
-interface HttpErrorLike {
-  statusCode: number;
-  expose: boolean;
-  type?: string;
-  message: string;
-}
-
 export const INTERNAL_ERROR_MESSAGE = 'Internal server error';
 
 export function createErrorResponse(exception: unknown, path: string): ErrorResponse {
@@ -63,12 +56,6 @@ function resolveError(exception: unknown): ResolvedError {
   ) {
     return { statusCode: HttpStatus.BAD_REQUEST, message: 'Invalid data' };
   }
-  if (isClientHttpError(exception)) {
-    return {
-      statusCode: exception.statusCode,
-      message: exception.type === 'entity.parse.failed' ? 'Malformed JSON body' : exception.message,
-    };
-  }
   return { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: INTERNAL_ERROR_MESSAGE };
 }
 
@@ -79,6 +66,9 @@ function formatZodIssues(error: z.ZodError): string[] {
 }
 
 function extractHttpMessage(exception: HttpException): string | string[] {
+  if (exception.cause instanceof SyntaxError) {
+    return 'Malformed JSON body';
+  }
   const response = exception.getResponse();
   if (typeof response === 'string') {
     return response;
@@ -90,17 +80,4 @@ function extractHttpMessage(exception: HttpException): string | string[] {
     }
   }
   return exception.message;
-}
-
-function isClientHttpError(exception: unknown): exception is HttpErrorLike {
-  if (typeof exception !== 'object' || exception === null) {
-    return false;
-  }
-  const candidate = exception as Partial<HttpErrorLike>;
-  return (
-    candidate.expose === true &&
-    typeof candidate.statusCode === 'number' &&
-    candidate.statusCode >= 400 &&
-    candidate.statusCode < 500
-  );
 }
