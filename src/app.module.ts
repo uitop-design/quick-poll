@@ -5,6 +5,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { AppConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { PollsModule } from './polls/polls.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 import { RedisModule } from './redis/redis.module.js';
 
 @Module({
@@ -13,6 +14,7 @@ import { RedisModule } from './redis/redis.module.js';
     DatabaseModule,
     RedisModule,
     PollsModule,
+    RealtimeModule,
     RouterModule.register([{ path: 'api', children: [PollsModule] }]),
   ],
   providers: [
