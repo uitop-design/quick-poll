@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { PollsModule } from './polls/polls.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { VotesModule } from './votes/votes.module.js';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { RedisModule } from './redis/redis.module.js';
     RedisModule,
     PollsModule,
     RealtimeModule,
-    RouterModule.register([{ path: 'api', children: [PollsModule] }]),
+    VotesModule,
+    RouterModule.register([{ path: 'api', children: [PollsModule, VotesModule] }]),
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
